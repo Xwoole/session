@@ -1,0 +1,23 @@
+{
+    "name": "xwoole/session",
+    "version": "1.0.0",
+    "description": "Xwoole session library for PHP.",
+    "type": "lib",
+    "require-dev": {
+        "symfony/var-dumper": "7.2.x-dev"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Xwoole\\Session\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "mohachi",
+            "email": "hachiassali15@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
