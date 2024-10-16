@@ -5,7 +5,8 @@
     "type": "lib",
     "require-dev": {
         "symfony/var-dumper": "7.2.x-dev",
-        "openswoole/ide-helper": "dev-master"
+        "openswoole/ide-helper": "dev-master",
+        "ukko/phpredis-phpdoc": "dev-master"
     },
     "license": "MIT",
     "autoload": {
