@@ -20,7 +20,7 @@ assert(file_exists("$dir/123456789") == false, "failed to unset file");
 
 
 dump("[Test] creating file");
-$data = ["key", "value"];
+$data = ["uid" => 372];
 $storage->set("123456789", $data);
 assert(is_file("$dir/123456789"), "failed to create file");
 
@@ -30,7 +30,7 @@ assert($storage->check("123456789"), "failed to check for file existence");
 
 
 dump("[Test] getting data");
-assert($storage->get("123456789") == $data, "failed to set");
+assert($storage->get("123456789") == $data, "failed to get data");
 
 
 dump("[Test] renaming");
