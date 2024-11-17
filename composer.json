@@ -1,12 +1,10 @@
 {
     "name": "xwoole/session",
-    "version": "1.0.0",
     "description": "Xwoole session library for PHP.",
     "type": "lib",
     "require-dev": {
-        "symfony/var-dumper": "7.2.x-dev",
-        "openswoole/ide-helper": "dev-master",
-        "ukko/phpredis-phpdoc": "dev-master"
+        "symfony/var-dumper": "^7.1",
+        "openswoole/ide-helper": "^22.1"
     },
     "license": "MIT",
     "autoload": {
@@ -19,6 +17,5 @@
             "name": "mohachi",
             "email": "hachiassali15@gmail.com"
         }
-    ],
-    "minimum-stability": "dev"
+    ]
 }
