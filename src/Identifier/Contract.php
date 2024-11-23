@@ -2,7 +2,9 @@
 
 namespace Xwoole\Session\Identifier;
 
-interface Contract
+use Stringable;
+
+interface Contract extends Stringable
 {
     
     public function get(): string;

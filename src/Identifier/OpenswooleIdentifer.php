@@ -47,4 +47,9 @@ class OpenswooleIdentifer implements Contract
         $this->response->cookie($this->cookieName, "", -1);
     }
     
+    public function __toString(): string
+    {
+        return $this->get();
+    }
+    
 }
