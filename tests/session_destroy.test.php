@@ -20,12 +20,10 @@ $server->on("request", function(Request $request, Response $response)
     $session->start();
     
     
-    dump("[Test] aborting");
-    $session->set("key", "value");
-    $session->abort();
-    $data = $storage->get($identifier->get());
-    assert($session->isClosed(), "failed to close");
-    assert($data == [], "failed to resetting original values");
+    dump("[Test] destroying");
+    $session->destroy();
+    assert($identifier->get() == "", "failed to clear the id");
+    assert($storage->check($identifier) == false, "failed to remove the associated stored data");
     
     $response->end();
 });

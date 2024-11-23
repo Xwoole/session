@@ -1,5 +1,7 @@
 <?php
 
+namespace XwooleTest;
+
 use OpenSwoole\Coroutine\Http\Client;
 use OpenSwoole\Http\Request;
 use OpenSwoole\Http\Response;
@@ -20,11 +22,12 @@ $server->on("request", function(Request $request, Response $response)
     $session->start();
     
     
-    dump("[Test] destroying");
-    $id = $identifier->get();
-    $session->destroy();
-    assert($identifier->get() == "", "failed to clear the id");
-    assert($storage->check($id) == false, "failed to remove the associated stored data");
+    dump("[Test] aborting");
+    $session["key"] = "value";
+    $session->abort();
+    $dictionary = unserialize($storage->get($identifier->get()));
+    assert(false == $session->isActive(), "failed to close");
+    assert($dictionary == [], "failed to resetting original values");
     
     $response->end();
 });

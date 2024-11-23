@@ -2,138 +2,184 @@
 
 namespace Xwoole\Session;
 
+use ArrayAccess;
 use OutOfBoundsException;
 use Random\Randomizer;
-use RuntimeException;
 use Xwoole\Session\Storage\Contract as Storage;
 use Xwoole\Session\Identifier\Contract as Identifier;
 
-class Session
+class Session implements ArrayAccess
 {
     
-    private $data = [];
+    private $dictionary = [];
     private $isActive = false;
     
-    public function __construct(readonly Storage $stockage, readonly Identifier $identifier)
+    public function __construct(readonly Storage $store, readonly Identifier $id)
     {
         
     }
     
-    public function isClosed()
-    {
-        return ! $this->isActive;
-    }
-    
-    private function generateId(): string
+    private function generateId()
     {
         do
         {
-            $id = bin2hex((new Randomizer)->getBytes(16));
+            $this->id->set(bin2hex((new Randomizer)->getBytes(16)));
         }
-        while( $this->stockage->check($id) );
-        
-        return $id;
+        while( $this->store->check($this->id) );
     }
     
-    public function start(): void
+    private function save()
+    {
+        if( extension_loaded("igbinary") )
+        {
+            $data = call_user_func("igbinary_serialize", $this->dictionary);
+        }
+        else
+        {
+            $data = serialize($this->dictionary);
+        }
+        
+        $this->store->set($this->id, $data);
+    }
+    
+    private function load()
+    {
+        $data = $this->store->get($this->id);
+        
+        if( extension_loaded("igbinary") )
+        {
+            $this->dictionary = call_user_func("igbinary_unserialize", $data);
+        }
+        else
+        {
+            $this->dictionary = unserialize($data);
+        }
+    }
+    
+    private function assertClosed()
     {
         if( $this->isActive )
         {
-            throw new RuntimeException("session has been already started");
+            throw new SessionException($this, "Session has already started");
         }
-        
-        $this->isActive = true;
-        $id = $this->identifier->get();
-        
-        if( empty($id) || ! $this->stockage->check($id) )
-        {
-            $id = $this->generateId();
-            $this->identifier->set($id);
-            $this->stockage->set($id, []);
-            return;
-        }
-        
-        $this->data = $this->stockage->get($id);
     }
     
-    public function get(string $key)
+    private function assertOpened()
     {
-        if( ! isset($this->data[$key]) )
+        if( ! $this->isActive )
+        {
+            throw new SessionException($this, "Unavailable session");
+        }
+    }
+    
+    public function offsetExists(mixed $key): bool
+    {
+        $this->assertOpened();
+        return array_key_exists($key, $this->dictionary);
+    }
+    
+    public function offsetGet(mixed $key): mixed
+    {
+        $this->assertOpened();
+        
+        if( ! $this->offsetExists($key) )
         {
             throw new OutOfBoundsException("invalid key '$key'");
         }
         
-        return $this->data[$key];
+        return $this->dictionary[$key];
     }
     
-    public function set(string $key, string $value)
+    public function offsetSet(mixed $key, mixed $value): void
     {
-        $this->data[$key] = $value;
+        $this->assertOpened();
+        $this->dictionary[$key] = $value;
     }
     
-    public function unset(string $key)
+    public function offsetUnset(mixed $key): void
     {
-        unset($this->data[$key]);
-    }
-    
-    public function commit()
-    {
-        if( $this->isActive )
-        {
-            $this->stockage->set($this->identifier->get(), $this->data);
-        }
-    }
-    
-    public function reset()
-    {
-        if( $this->isActive )
-        {
-            $this->data = $this->stockage->get($this->identifier->get());
-        }
-    }
-    
-    public function close()
-    {
-        if( $this->isActive )
-        {
-            $this->commit();
-            $this->isActive = false;
-            $this->stockage->close();
-        }
-    }
-    
-    public function regenerate()
-    {
-        if( $this->isActive )
-        {
-            $id = $this->generateId();
-            $this->stockage->rename($this->identifier->get(), $id);
-            $this->identifier->set($id);
-        }
-    }
-    
-    public function abort()
-    {
-        if( $this->isActive )
-        {
-            $this->isActive = false;
-            $this->stockage->close();
-        }
-    }
-    
-    public function destroy()
-    {
-        if( $this->isActive )
-        {
-            $this->stockage->unset($this->identifier->get());
-            $this->identifier->unset();
-        }
+        $this->assertOpened();
+        unset($this->dictionary[$key]);
     }
     
     public function free()
     {
-        $this->data = [];
-        $this->stockage->set($this->identifier->get(), []);
+        $this->assertOpened();
+        $this->dictionary = [];
+        $this->save();
+    }
+    
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+    
+    public function start(): void
+    {
+        $this->assertClosed();
+        $this->isActive = true;
+        
+        if( $this->id == "" || ! $this->store->check($this->id) )
+        {
+            $this->generateId();
+            $this->save();
+            return;
+        }
+        
+        $this->load();
+    }
+    
+    public function commit()
+    {
+        $this->assertOpened();
+        $this->save();
+    }
+    
+    public function reset()
+    {
+        $this->assertOpened();
+        $this->load();
+    }
+    
+    public function regenerate()
+    {
+        $this->assertOpened();
+        $old = $this->id->get();
+        $this->generateId();
+        $this->store->rename($old, $this->id);
+    }
+    
+    public function abort()
+    {
+        $this->assertOpened();
+        $this->store->close();
+        $this->isActive = false;
+    }
+    
+    public function close()
+    {
+        $this->assertOpened();
+        $this->save();
+        $this->store->close();
+        $this->isActive = false;
+    }
+    
+    public function destroy()
+    {
+        $this->assertOpened();
+        $this->store->unset($this->id);
+        $this->id->unset();
+        $this->dictionary = [];
+        $this->store->close();
+        $this->isActive = false;
+    }
+    
+    public function __destruct()
+    {
+        if( $this->isActive )
+        {
+            $this->close();
+        }
     }
     
 }

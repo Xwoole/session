@@ -1,9 +1,13 @@
 <?php
 
+namespace XwooleTest;
+
+use AssertionError;
 use OpenSwoole\Coroutine\Http\Client;
 use OpenSwoole\Http\Request;
 use OpenSwoole\Http\Response;
 use OpenSwoole\Http\Server;
+use OutOfBoundsException;
 use Xwoole\Session\Identifier\OpenswooleIdentifer;
 use Xwoole\Session\Session;
 use Xwoole\Session\Storage\FileStorage;
@@ -27,7 +31,7 @@ $server->on("request", function(Request $request, Response $response)
     dump("[Test] getting unavailable key");
     try
     {
-        $session->get("key");
+        $session["key"];
         throw new AssertionError("failed to get invalid key value");
     }
     catch( OutOfBoundsException )
@@ -37,22 +41,22 @@ $server->on("request", function(Request $request, Response $response)
     
     
     dump("[Test] setting key-value");
-    $session->set("key", "value");
-    assert($session->get("key") == "value", "failed to get the set value");
+    $session["key"] = "value";
+    assert($session["key"] == "value", "failed to get the set value");
     
     
     dump("[Test] committing");
     $session->commit();
-    $data = $storage->get($identifier->get());
-    assert(key_exists("key", $data), "failed to set key");
-    assert($data["key"] == "value", "failed to set key-value");
+    $dictionary = unserialize($storage->get($identifier));
+    assert(key_exists("key", $dictionary), "failed to set key");
+    assert($dictionary["key"] == "value", "failed to set key-value");
     
     
     dump("[Test] unsetting key-value");
-    $session->unset("key");
+    unset($session["key"]);
     try
     {
-        $session->get("key");
+        $session["key"];
         throw new AssertionError("failed to unset key");
     }
     catch( OutOfBoundsException )
@@ -62,11 +66,11 @@ $server->on("request", function(Request $request, Response $response)
     
     
     dump("[Test] resetting original values");
-    $session->set("key1", "value1");
+    $session["key1"] = "value1";
     $session->reset();
     try
     {
-        $session->get("key1");
+        $session["key1"];
         throw new AssertionError("failed to resetting original values");
     }
     catch( OutOfBoundsException )
@@ -85,17 +89,17 @@ $server->on("request", function(Request $request, Response $response)
     
     dump("[Test] freeing");
     $session->free();
-    $data = $storage->get($identifier->get());
-    assert($data == [], "failed to free");
+    $dictionary = unserialize($storage->get($identifier->get()));
+    assert(empty($dictionary), "failed to free");
     
     
     dump("[Test] closing");
-    $session->set("key1", "value1");
+    $session["key1"] = "value1";
     $session->close();
-    $data = $storage->get($identifier->get());
-    assert($session->isClosed(), "failed to close");
-    assert(key_exists("key1", $data), "failed to commit before closing");
-    assert($data["key1"] == "value1", "failed to commit before closing");
+    $dictionary = unserialize($storage->get($identifier->get()));
+    assert(false === $session->isActive(), "failed to close");
+    assert(key_exists("key1", $dictionary), "failed to commit before closing");
+    assert($dictionary["key1"] == "value1", "failed to commit before closing");
     
     
     $response->end();
