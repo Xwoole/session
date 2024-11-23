@@ -13,6 +13,9 @@
             "Xwoole\\Session\\": "src/"
         }
     },
+    "autoload-dev": {
+        "files": ["tests/helper.php"]
+    },
     "authors": [
         {
             "name": "mohachi",

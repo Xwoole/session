@@ -6,29 +6,35 @@ use OutOfBoundsException;
 
 class FileStorage implements Contract
 {
+    
     public function __construct(readonly string $dir)
     {
         @mkdir($this->dir);
     }
     
-    public function check(string $id): bool
+    private function getPath(string $id)
     {
-        return is_file($this->dir ."/". $id);
+        return $this->dir ."/". $id;
     }
     
-    public function get(string $id): array
+    public function check(string $id): bool
+    {
+        return is_file($this->getPath($id));
+    }
+    
+    public function get(string $id): string
     {
         if( ! $this->check($id) )
         {
             throw new OutOfBoundsException("invalid id");
         }
         
-        return unserialize(file_get_contents($this->dir ."/". $id));
+        return file_get_contents($this->getPath($id));
     }
     
-    public function set(string $id, array $data): void
+    public function set(string $id, string $data): void
     {
-        file_put_contents($this->dir ."/". $id, serialize($data));
+        file_put_contents($this->getPath($id), $data);
     }
     
     public function rename(string $oldId, string $newId): void
@@ -38,7 +44,7 @@ class FileStorage implements Contract
     
     public function unset(string $id): void
     {
-        @unlink($this->dir ."/". $id);
+        @unlink($this->getPath($id));
     }
     
     public function close(): void

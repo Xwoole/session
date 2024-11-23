@@ -27,19 +27,19 @@ class RedisStorage implements Contract
         return $this->dbc->exists($id);
     }
     
-    public function get(string $id): array
+    public function get(string $id): string
     {
         if( ! $this->dbc->exists($id) )
         {
             throw new OutOfBoundsException;
         }
         
-        return unserialize($this->dbc->get($id));
+        return $this->dbc->get($id);
     }
     
-    public function set(string $id, array $data): void
+    public function set(string $id, string $data): void
     {
-        $this->dbc->set($id, serialize($data));
+        $this->dbc->set($id, $data);
     }
     
     public function rename(string $oldId, string $newId): void
