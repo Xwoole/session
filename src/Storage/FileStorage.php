@@ -12,6 +12,11 @@ class FileStorage implements Contract
         @mkdir($this->dir);
     }
     
+    public function open(): void
+    {
+        
+    }
+    
     private function getPath(string $id)
     {
         return $this->dir ."/". $id;

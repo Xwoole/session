@@ -5,6 +5,7 @@ namespace Xwoole\Session\Storage;
 interface Contract
 {
     
+    public function open(): void;
     public function check(string $id): bool;
     public function get(string $id): string;
     public function set(string $id, string $data): void;

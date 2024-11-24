@@ -60,3 +60,8 @@ assert($dbc->exists("987654321") == false, "failed to unset id");
 dump("[Test] closing");
 $storage->close();
 assert($dbc->isConnected() == false, "fialed to close");
+
+
+dump("[Test] openning");
+$storage->open();
+assert($dbc->isConnected() == true);

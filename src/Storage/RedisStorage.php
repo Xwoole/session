@@ -4,22 +4,33 @@ namespace Xwoole\Session\Storage;
 
 use OutOfBoundsException;
 use Redis;
-use RuntimeException;
 
 class RedisStorage implements Contract
 {
     
     public function __construct(
         readonly Redis $dbc,
-        $host,
-        $port = 6379,
-        $timeout = 0.0,
-        $reserved = null,
-        $retryInterval = 0,
-        $readTimeout = 0.0
+        private $host,
+        private $port = 6379,
+        private $timeout = 0.0,
+        private $reserved = null,
+        private $retryInterval = 0,
+        private $readTimeout = 0.0
     )
     {
-        $dbc->connect($host, $port, $timeout, $reserved, $retryInterval, $readTimeout);
+        $this->open();
+    }
+    
+    public function open(): void
+    {
+        $this->dbc->connect(
+            $this->host,
+            $this->port,
+            $this->timeout,
+            $this->reserved,
+            $this->retryInterval,
+            $this->readTimeout
+        );
     }
     
     public function check(string $id): bool

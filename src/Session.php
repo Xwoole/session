@@ -117,9 +117,10 @@ class Session implements ArrayAccess
     public function start(): void
     {
         $this->assertClosed();
+        $this->store->open();
         $this->isActive = true;
         
-        if( $this->id == "" || ! $this->store->check($this->id) )
+        if( "" == $this->id || ! $this->store->check($this->id) )
         {
             $this->generateId();
             $this->save();
