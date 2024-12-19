@@ -3,57 +3,62 @@
 namespace Xwoole\Session;
 
 use ArrayAccess;
+use RuntimeException;
 use OutOfBoundsException;
 use Random\Randomizer;
 use Xwoole\Session\Storage\Contract as Storage;
 use Xwoole\Session\Identifier\Contract as Identifier;
+use Xwoole\Session\Serializer\Contract as Serializer;
+use Xwoole\Session\Serializer\IGBinarySerializer;
+use Xwoole\Session\Serializer\NativeSerializer;
 
 class Session implements ArrayAccess
 {
     
     private $dictionary = [];
     private $isActive = false;
+    readonly Serializer $dumper;
     
-    public function __construct(readonly Storage $store, readonly Identifier $id)
+    public function __construct(
+        readonly Storage $store,
+        readonly Identifier $id,
+        ?Serializer $dumper = null
+    )
     {
+        if( null === $dumper )
+        {
+            try
+            {
+                $dumper = new IGBinarySerializer();
+            }
+            catch( RuntimeException )
+            {
+                $dumper = new NativeSerializer();
+            }
+        }
         
+        $this->dumper = $dumper;
     }
     
     private function generateId()
     {
         do
         {
-            $this->id->set(bin2hex((new Randomizer)->getBytes(16)));
+            $id = bin2hex((new Randomizer)->getBytes(16));
         }
-        while( $this->store->check($this->id) );
+        while( $this->store->check($id) );
+        
+        $this->id->set($id);
     }
     
     private function save()
     {
-        if( extension_loaded("igbinary") )
-        {
-            $data = call_user_func("igbinary_serialize", $this->dictionary);
-        }
-        else
-        {
-            $data = serialize($this->dictionary);
-        }
-        
-        $this->store->set($this->id, $data);
+        $this->store->set($this->id, $this->dumper->serialize($this->dictionary));
     }
     
     private function load()
     {
-        $data = $this->store->get($this->id);
-        
-        if( extension_loaded("igbinary") )
-        {
-            $this->dictionary = call_user_func("igbinary_unserialize", $data);
-        }
-        else
-        {
-            $this->dictionary = unserialize($data);
-        }
+        $this->dictionary = $this->dumper->unserialize($this->store->get($this->id));
     }
     
     private function assertClosed()
